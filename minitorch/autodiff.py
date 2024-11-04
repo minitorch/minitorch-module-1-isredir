@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, Tuple
 
 from typing_extensions import Protocol
 
@@ -22,8 +22,11 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError("Need to implement for Task 1.1")
+    a = list(vals)
+    a[arg] += epsilon / 2
+    diff = list(vals)
+    diff[arg] -= epsilon / 2
+    return (f(*a) - f(*diff)) / epsilon
 
 
 variable_count = 1
@@ -61,8 +64,18 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError("Need to implement for Task 1.4")
+    visited = set()
+    topsort = []
+
+    def dfs(var: Variable) -> None:
+        if var.unique_id not in visited or not var.is_constant:
+            visited.add(var.unique_id)
+            for parent in var.parents:
+                dfs(parent)
+            topsort.append(var)
+
+    dfs(variable)
+    return topsort
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -76,8 +89,20 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError("Need to implement for Task 1.4")
+    derivatives = {variable.unique_id: deriv}
+    for node in reversed(topological_sort(variable)):
+        if node.unique_id in derivatives:
+            deriv = derivatives[node.unique_id]
+        else:
+            deriv = 0.0
+        if node.is_leaf():
+            node.accumulate_derivative(deriv)
+        else:
+            for scalar, derivative in node.chain_rule(deriv):
+                if scalar.unique_id not in derivatives:
+                    derivatives[scalar.unique_id] = derivative
+                else:
+                    derivatives[scalar.unique_id] += derivative
 
 
 @dataclass
